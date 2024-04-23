@@ -65,10 +65,12 @@ public class Network {
  
         @Override
         public void checkServerTrusted(X509Certificate[] chain, String authType) throws CertificateException {
-            System.out.println("SSL certificate");
-            System.out.println(chain);
             System.out.println(authType);
-            // empty method
+            for (int index = 0; index < chain.length; index++)
+            {
+                X509Certificate cert = chain[index];
+                System.out.println(cert);
+            }
         }
         @Override
         public void checkServerTrusted(X509Certificate[] chain, String authType, SSLEngine engine) throws CertificateException {
