@@ -1,51 +1,59 @@
 package net;
 
 import java.net.Socket;
-import java.net.URI;
-import java.net.http.HttpResponse;
-import java.net.http.HttpClient;
-import java.net.http.HttpRequest;
+import java.net.HttpURLConnection;
+import java.net.URL;
 import java.security.SecureRandom;
 import java.security.cert.CertificateException;
 import java.security.cert.X509Certificate;
 
+import javax.net.ssl.HostnameVerifier;
+import javax.net.ssl.HttpsURLConnection;
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLEngine;
+import javax.net.ssl.SSLSession;
 import javax.net.ssl.TrustManager;
 import javax.net.ssl.X509ExtendedTrustManager;
 
 public class Network {
     public static void main(String[] args){
         
-        String address = "http://www.google.com";
+        String address = "https://www.google.com";
         if (args.length > 0)
         {
             address = args[0];
         }
 
         try {
-            SSLContext sslContext = SSLContext.getInstance("SSL");
-            sslContext.init(null, new TrustManager[]{ TRUST_MANAGER }, new SecureRandom());
-        
-            HttpClient httpClient = HttpClient.newBuilder()
-                .sslContext(sslContext)
-                .build();
 
-            HttpRequest request = HttpRequest.newBuilder()
-                .uri(URI.create(address))
-                .build();
+            URL url = new URL(address);
+            HttpsURLConnection client = (HttpsURLConnection) url.openConnection();
+            client.setRequestMethod("GET");
+            client.setRequestProperty("User-Agent", "java/1.7.0_80");
+
+            HttpsURLConnection.setDefaultHostnameVerifier(new HostnameVerifier(){
+                public boolean verify(String hostname, SSLSession session) {
+                    return true;
+                }
+            });
+
+            SSLContext sslContext = SSLContext.getInstance("TLSv1.2");
+            sslContext.init(null, new TrustManager[] { TRUST_MANAGER }, new SecureRandom());
+            client.setSSLSocketFactory(sslContext.getSocketFactory());
+
+            // send HTTP request
 
             System.out.println(String.format("GET %s HTTP/1.1", address));
 
-            HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
-            System.out.println(response.statusCode());
+            int responseCode = client.getResponseCode();
+            System.out.println(responseCode);
         }
         catch (java.io.IOException e) {
             Network.printStackTrace(e);
         }
-        catch (java.lang.InterruptedException e) {
-            Network.printStackTrace(e);
-        }
+        // catch (java.lang.InterruptedException e) {
+        //     Network.printStackTrace(e);
+        // }
         catch (java.security.KeyManagementException e) {
             Network.printStackTrace(e);
         }
@@ -66,10 +74,8 @@ public class Network {
         @Override
         public void checkServerTrusted(X509Certificate[] chain, String authType) throws CertificateException {
             System.out.println(authType);
-            for (int index = 0; index < chain.length; index++)
-            {
-                X509Certificate cert = chain[index];
-                System.out.println(cert);
+            for (int index = 0; index < chain.length; index++) {
+                System.out.println(chain[index]);
             }
         }
         @Override
